@@ -3,28 +3,66 @@ from fastapi_users.authentication import (AuthenticationBackend,
                                           CookieTransport, JWTStrategy)
 from src.config import settings
 
-cookie_transport = CookieTransport(cookie_name="user_cookie", cookie_max_age=3600)
-
-# JWTStrategy соответствует протоколу для стратегий аутентификации в FastAPI Users.
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.secret, lifetime_seconds=3600)
-
-# Комбинация транспорта аутентификации и стратегии.
-auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=cookie_transport,
-    get_strategy=get_jwt_strategy,
+# Транспорт для access токена
+cookie_transport = CookieTransport(
+    cookie_name="access_token",
+    cookie_max_age=settings.access_exp,
+    cookie_secure=True,  # Только для HTTPS
+    cookie_httponly=True  # Защита от XSS
 )
+
+# Транспорт для refresh токена
+refresh_cookie_transport = CookieTransport(
+    cookie_name="refresh_token",
+    cookie_max_age=settings.refresh_exp,
+    cookie_secure=True,
+    cookie_httponly=True,
+    cookie_samesite="strict"  # Защита от CSRF
+)
+
+# Стратегия аутентификации для access токена (короткоживущий)
+def get_access_strategy() -> JWTStrategy:
+    return JWTStrategy(
+        secret=settings.access_secret,
+        lifetime_seconds=settings.access_exp,
+        algorithm=settings.algorithm
+    )
+
+# Стратегия аутентификации для refresh токена (долгоживущий)
+def get_refresh_strategy() -> JWTStrategy:
+    return JWTStrategy(
+        secret=settings.refresh_secret,
+        lifetime_seconds=settings.refresh_exp,
+        algorithm=settings.algorithm
+    )
+
+auth_backend = AuthenticationBackend(
+    name="access_jwt",
+    transport=cookie_transport,
+    get_strategy=get_access_strategy,
+)
+
+refresh_backend = AuthenticationBackend(
+    name="refresh_jwt",
+    transport=refresh_cookie_transport,
+    get_strategy=get_refresh_strategy,
+)
+
 from src.auth.manager import get_user_manager
 from src.auth.models import User
 
 fastapi_users = FastAPIUsers[User, int](
     get_user_manager,
-    [auth_backend],
+    [auth_backend, refresh_backend],
 )
 
 # Создание dependency для получения текущего пользователя
-# Используется как dependency в маршрутах, например:
+# Используется как dependency в защищенных маршрутах, например:
 # @router.get("/protected-route")
 # async def protected_route(user: User = Depends(current_user)):
+
+# Dependency для получения текущего пользователя по access токену
 current_user = fastapi_users.current_user()
+
+# Dependency для получения текущего пользователя по refresh токену
+current_refresh_user = fastapi_users.current_user(active=True, backend=refresh_backend)

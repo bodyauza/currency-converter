@@ -6,11 +6,41 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from starlette.responses import HTMLResponse
 
+from src.auth.manager import get_user_manager
 from src.config import settings
 from database import Base, engine
-from src.auth.auth_config import fastapi_users, auth_backend, current_user
+from src.auth.auth_config import fastapi_users, auth_backend, current_user, current_refresh_user, get_jwt_strategy, \
+    refresh_backend, get_refresh_strategy
 from src.auth.models import User
-from src.auth.schemas import UserRead, UserCreate
+from src.auth.schemas import UserRead, UserCreate, TokenPair
+
+from fastapi import Response, status
+from fastapi.responses import JSONResponse
+from fastapi_users import models
+
+
+"""
+1. Логин пользователя:
+   - Пользователь отправляет email и пароль
+   - Если данные верны, сервер генерирует:
+     - access_token (короткоживущий, 5 минут) - в куках access_token
+     - refresh_token (долгоживущий, 30 дней) - в куках refresh_token
+
+2. Доступ к защищенным маршрутам:
+   - Клиент отправляет access_token в заголовках
+   - Если токен истек (401 ошибка), клиент запрашивает новый через /auth/access-token
+
+3. Обновление access токена:
+   - Клиент отправляет refresh_token на /auth/access-token
+   - Сервер проверяет токен и возвращает новый access_token
+
+4. Полное обновление токенов:
+   - Когда refresh_token почти истек (осталось 1-5 дней), клиент отправляет его на /auth/refresh
+   - Сервер возвращает новую пару токенов
+
+5. Выход из системы:
+   - При logout сервер очищает оба куки-файла
+"""
 
 
 templates = Jinja2Templates(directory="templates")
@@ -102,6 +132,56 @@ async def currency_conversion(request: Request, from_: str = Form(...), to: str 
 @app.get('/protected-user')
 def protected_user(user: User = Depends(current_user)):
     return f"Hello {user.username} or email {user.email}"
+
+
+# Добавляем новые маршруты для работы с токенами
+auth_router = APIRouter()
+
+
+@auth_router.post("/auth/refresh", response_model=TokenPair)
+async def refresh_token(
+        response: Response,
+        user: models.UP = Depends(current_refresh_user),
+        user_manager=Depends(get_user_manager),
+):
+    # Генерируем новую пару токенов
+    access_token = await auth_backend.login(strategy=get_jwt_strategy(), user=user)
+    refresh_token = await refresh_backend.login(strategy=get_refresh_strategy(), user=user)
+
+    # Устанавливаем куки
+    await auth_backend.transport.set_login_response(access_token, response)
+    await refresh_backend.transport.set_login_response(refresh_token, response)
+
+    return {"access_token": access_token, "refresh_token": refresh_token}
+
+
+@auth_router.post("/auth/access-token")
+async def get_access_token(
+        response: Response,
+        user: models.UP = Depends(current_refresh_user),
+        user_manager=Depends(get_user_manager),
+):
+    # Генерируем только access токен
+    access_token = await auth_backend.login(strategy=get_jwt_strategy(), user=user)
+    await auth_backend.transport.set_login_response(access_token, response)
+    return {"access_token": access_token}
+
+
+@auth_router.post("/auth/logout")
+async def logout(
+        response: Response,
+        user: models.UP = Depends(current_user),
+):
+    # Удаляем куки с токенами
+    await auth_backend.transport.set_logout_response(response)
+    await refresh_backend.transport.set_logout_response(response)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Successfully logged out"},
+    )
+
+
+app.include_router(auth_router, prefix="", tags=["Auth"])
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,17 +1,26 @@
-from typing import Optional
+from typing import Optional, Dict, Union
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Response, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import (BaseUserManager, IntegerIDMixin, exceptions, models,
                            schemas)
+from fastapi_users.password import PasswordHelper
 
 from src.config import settings
 from .models import User
 from .user_repository import get_user_db
 
 
+password_helper_bc = PasswordHelper(
+    scheme="bcrypt",
+    bcrypt_rounds=14,
+    deprecated=["auto"]  # Автоматически помечает устаревшие алгоритмы
+)
+
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
-    reset_password_token_secret = settings.secret
-    verification_token_secret = settings.secret
+    reset_password_token_secret = settings.reset_password_secret
+    verification_token_secret = settings.email_verification_secret
+    password_helper = password_helper_bc
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
@@ -43,6 +52,62 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
         await self.on_after_register(created_user, request)
 
         return created_user
+
+    async def on_after_login(
+            self,
+            user: User,
+            request: Optional[Request] = None,
+            response: Optional[Response] = None,
+    ):
+        print(f"User {user.id} logged in.")
+
+    async def on_after_logout(
+            self,
+            user: User,
+            request: Optional[Request] = None,
+            response: Optional[Response] = None,
+    ):
+        print(f"User {user.id} logged out.")
+
+    async def authenticate(
+            self,
+            credentials: Union[Dict[str, str], OAuth2PasswordRequestForm]
+    ) -> models.UP:  # Возвращает модель пользователя
+        """
+        Аутентификация пользователя с защитой от timing-атак и автоматическим
+        обновлением устаревших хешей паролей.
+
+        Union[...] означает, что метод принимает либо словарь {'email':..., 'password':...},
+        либо стандартную форму OAuth2PasswordRequestForm.
+        """
+        email = credentials.get("email") if isinstance(credentials, dict) else credentials.username
+        password = credentials.get("password") if isinstance(credentials, dict) else credentials.password
+
+        try:
+            user = await self.get_by_email(email)
+        except exceptions.UserNotExists:
+            # Защита от timing-атак: хешируем пароль даже если пользователь не существует
+            self.password_helper.hash(password)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+
+        # Проверка пароля и получение нового хеша (если алгоритм устарел)
+        verified, updated_password_hash = self.password_helper.verify_and_update(
+            password, user.hashed_password
+        )
+        if not verified:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials"
+            )
+
+        # Если алгоритм хеширования устарел, обновляем хеш в БД
+        if updated_password_hash is not None:
+            await self.user_db.update(user, {"hashed_password": updated_password_hash})
+
+        return user
 
 # Асинхронная функция для получения экземпляра UserManager с зависимостью от базы данных пользователей
 async def get_user_manager(user_db=Depends(get_user_db)):

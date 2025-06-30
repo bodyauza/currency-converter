@@ -7,12 +7,15 @@ class Settings(BaseSettings):
     api_mode: str
     app_name: str
     admin_email: str
-    secret: str
+    access_secret: str
+    refresh_secret: str
     algorithm: str
-    refresh_exp: int
     access_exp: int
+    refresh_exp: int
 
-    # ext API parameters
+    reset_password_secret: str
+    email_verification_secret: str
+
     CURRENCY_API_KEY: str
 
     # db parameters
@@ -23,10 +26,6 @@ class Settings(BaseSettings):
     DB_NAME: str
     DB_DRIVER_SYNC: str
     DB_DRIVER_ASYNC: str
-
-    POSTGRES_DB: str = 'postgres'
-    POSTGRES_USER: str = 'postgres'
-    POSTGRES_PASSWORD: str = 'admin'
 
     # DATABASE_URL = "postgresql+asyncpg://root:123@localhost:5432/clients"
 
