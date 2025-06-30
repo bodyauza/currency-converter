@@ -17,3 +17,4 @@
 **Source Code**: <a href="https://github.com/fastapi-users/fastapi-users" target="_blank">https://github.com/fastapi-users/fastapi-users</a>
 
 ---
+[FastAPI](https://fastapi.tiangolo.com/)
