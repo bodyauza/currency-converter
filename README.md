@@ -1,11 +1,11 @@
-# FastAPI Users
+# Currency Converter
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/fastapi-users/fastapi-users/master/logo.svg?sanitize=true" alt="FastAPI Users">
 </p>
 
 <p align="center">
-    <em>Ready-to-use and customizable users management for FastAPI </em>
+    <em>Ready-to-use and customizable users management for [FastAPI](https://fastapi.tiangolo.com/) </em>
 </p>
 
 [![PyPI version](https://badge.fury.io/py/fastapi-users.svg)](https://badge.fury.io/py/fastapi-users)
@@ -17,6 +17,3 @@
 **Source Code**: <a href="https://github.com/fastapi-users/fastapi-users" target="_blank">https://github.com/fastapi-users/fastapi-users</a>
 
 ---
-
-Add quickly a registration and authentication system to your [FastAPI](https://fastapi.tiangolo.com/) project. **FastAPI Users** is designed to be as customizable and adaptable as possible.
-
