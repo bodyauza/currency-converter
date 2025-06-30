@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-    <em>Ready-to-use and customizable users management for [FastAPI](https://fastapi.tiangolo.com/) </em>
+    <em>Ready-to-use and customizable users management for <a href="https://fastapi.tiangolo.com/">FastAPI</a></em>
 </p>
 
 [![PyPI version](https://badge.fury.io/py/fastapi-users.svg)](https://badge.fury.io/py/fastapi-users)
