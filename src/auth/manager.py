@@ -5,17 +5,19 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import (BaseUserManager, IntegerIDMixin, exceptions, models,
                            schemas)
 from fastapi_users.password import PasswordHelper
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 from src.config import settings
 from .models import User
 from .user_repository import get_user_db
 
+password_hash = PasswordHash((
+    BcryptHasher(rounds=14),
+))
 
-password_helper_bc = PasswordHelper(
-    scheme="bcrypt",
-    bcrypt_rounds=14,
-    deprecated=["auto"]  # Автоматически помечает устаревшие алгоритмы
-)
+password_helper_bc = PasswordHelper(password_hash)
+
 
 class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
     reset_password_token_secret = settings.reset_password_secret
