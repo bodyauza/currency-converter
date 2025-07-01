@@ -1,5 +1,17 @@
 # Currency Converter
 
+## Screenshots
+
+### Home Page
+
+![Home Page](https://github.com/bodyauza/currency-converter/raw/master/home_page.png)
+
+### Swagger UI
+
+![Swagger1](https://github.com/bodyauza/currency-converter/raw/master/swagger1.png)
+
+## Technological Stack
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/fastapi-users/fastapi-users/master/logo.svg?sanitize=true" alt="FastAPI Users">
 </p>
@@ -17,18 +29,6 @@
 **Source Code**: <a href="https://github.com/fastapi-users/fastapi-users" target="_blank">https://github.com/fastapi-users/fastapi-users</a>
 
 ---
-
-## Screenshots
-
-### Home Page
-
-![Home Page](https://github.com/bodyauza/currency-converter/raw/master/home_page.png)
-
-### Swagger UI
-
-![Swagger1](https://github.com/bodyauza/currency-converter/raw/master/swagger1.png)
-
-## Technological Stack
 
 ### Backend
 
