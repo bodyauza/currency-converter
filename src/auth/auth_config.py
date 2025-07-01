@@ -3,6 +3,8 @@ from fastapi_users.authentication import (AuthenticationBackend,
                                           CookieTransport, JWTStrategy)
 from src.config import settings
 
+from fastapi import Request
+
 # Транспорт для access токена
 cookie_transport = CookieTransport(
     cookie_name="access_token",
@@ -48,6 +50,13 @@ refresh_backend = AuthenticationBackend(
     get_strategy=get_refresh_strategy,
 )
 
+async def get_enabled_backends(request: Request):
+    path = request.url.path
+    if any(path.endswith(p) for p in ["/refresh", "/access-token", "/logout"]):
+        return [refresh_backend]
+    return [auth_backend]
+
+
 from src.auth.manager import get_user_manager
 from src.auth.models import User
 
@@ -61,8 +70,5 @@ fastapi_users = FastAPIUsers[User, int](
 # @router.get("/protected-route")
 # async def protected_route(user: User = Depends(current_user)):
 
-# Dependency для получения текущего пользователя по access токену
-current_user = fastapi_users.current_user()
-
-# Dependency для получения текущего пользователя по refresh токену
-current_refresh_user = fastapi_users.current_user(active=True, backend=refresh_backend)
+# Dependency для получения текущего пользователя
+current_user = fastapi_users.current_user(active=True, get_enabled_backends=get_enabled_backends)

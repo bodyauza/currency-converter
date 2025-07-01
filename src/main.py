@@ -9,7 +9,7 @@ from starlette.responses import HTMLResponse
 from src.auth.manager import get_user_manager
 from src.config import settings
 from database import Base, engine
-from src.auth.auth_config import fastapi_users, auth_backend, current_user, current_refresh_user, \
+from src.auth.auth_config import fastapi_users, auth_backend, current_user, \
     refresh_backend, get_refresh_strategy, get_access_strategy
 from src.auth.models import User
 from src.auth.schemas import UserRead, UserCreate, TokenPair
@@ -154,62 +154,70 @@ async def protected_admin_route(request: Request, user: User = Depends(current_u
         }
     )
 
+"""
+Если пользователь не аутентифицирован, current_user в is_admin() выбросит 401 Unauthorized;
+Затем выполняется проверка user.role.name == "admin";
+Если проверка не проходит, возвращается 403 Forbidden;
+
+FastAPI автоматически возвращает 403 Forbidden, если зависимость в dependencies=[...] вернула False.
+Это часть встроенной логики Depends() для удобства реализации RBAC (Role Based Access Control (рус. Управление доступом на основе ролей)).
+"""
 
 app.include_router(router)
 
 
-# # Добавляем новые маршруты для работы с токенами
-# auth_router = APIRouter(prefix="/auth", tags=["Auth"])
-#
-#
-# @auth_router.post("/refresh", response_model=TokenPair)
-# async def refresh_token(
-#         response: Response,
-#         user: models.UP = Depends(current_refresh_user)
-# ):
-#     # Генерируем новую пару токенов
-#     access_token = await auth_backend.login(strategy=get_access_strategy(), user=user)
-#     refresh_token = await refresh_backend.login(strategy=get_refresh_strategy(), user=user)
-#
-#     # Устанавливаем куки
-#     await auth_backend.transport.set_login_response(access_token, response)
-#     await refresh_backend.transport.set_login_response(refresh_token, response)
-#
-#     return JSONResponse(
-#         status_code=status.HTTP_200_OK,
-#         content={"message": "Tokens have been updated successfully!"},
-#     )
-#
-#
-# @auth_router.post("/access-token")
-# async def get_access_token(
-#         response: Response,
-#         user: models.UP = Depends(current_refresh_user)
-# ):
-#     # Генерируем только access токен
-#     access_token = await auth_backend.login(strategy=get_access_strategy(), user=user)
-#     await auth_backend.transport.set_login_response(access_token, response)
-#     return JSONResponse(
-#         status_code=status.HTTP_200_OK,
-#         content={"message": "Access token successfully updated!"},
-#     )
-#
-#
-# @auth_router.post("/logout")
-# async def logout(
-#         response: Response,
-#         user: models.UP = Depends(current_user),
-# ):
-#     # Удаляем куки с токенами
-#     await auth_backend.transport.set_logout_response(response)
-#     await refresh_backend.transport.set_logout_response(response)
-#     return JSONResponse(
-#         status_code=status.HTTP_200_OK,
-#         content={"message": "Successfully logged out"},
-#     )
-#
-#
-# app.include_router(auth_router)
+# Добавляем новые маршруты для работы с токенами
+auth_router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+@auth_router.post("/refresh", response_model=TokenPair)
+async def refresh_token(
+        response: Response,
+        user: models.UP = Depends(current_user)
+):
+    # Генерируем новую пару токенов
+    access_token = await auth_backend.login(strategy=get_access_strategy(), user=user)
+    refresh_token = await refresh_backend.login(strategy=get_refresh_strategy(), user=user)
+
+    # Устанавливаем куки
+    await auth_backend.transport.get_login_response(access_token, response)
+    await refresh_backend.transport.get_login_response(refresh_token, response)
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Tokens have been updated successfully!"},
+    )
+
+
+@auth_router.post("/access-token")
+async def get_access_token(
+        response: Response,
+        user: models.UP = Depends(current_user)
+):
+    # Генерируем только access токен
+    access_token = await auth_backend.login(strategy=get_access_strategy(), user=user)
+    await auth_backend.transport.get_login_response(access_token, response)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Access token successfully updated!"},
+    )
+
+
+@auth_router.post("/logout")
+async def logout(
+        response: Response,
+        user: models.UP = Depends(current_user),
+):
+    # Удаляем куки с токенами
+    await auth_backend.transport.get_logout_response(response)
+    await refresh_backend.transport.get_logout_response(response)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Successfully logged out"},
+    )
+
+
+app.include_router(auth_router)
 
 if __name__ == "__main__":
     import uvicorn
