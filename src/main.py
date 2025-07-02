@@ -19,30 +19,6 @@ from fastapi.responses import JSONResponse
 from fastapi_users import models
 
 
-"""
-1. Логин пользователя:
-   - Пользователь отправляет email и пароль
-   - Если данные верны, сервер генерирует:
-     - access_token (короткоживущий, 5 минут) - в куках access_token
-     - refresh_token (долгоживущий, 30 дней) - в куках refresh_token
-
-2. Доступ к защищенным маршрутам:
-   - Клиент отправляет access_token в заголовках
-   - Если токен истек (401 ошибка), клиент запрашивает новый через /auth/access-token
-
-3. Обновление access токена:
-   - Клиент отправляет refresh_token на /auth/access-token
-   - Сервер проверяет токен и возвращает новый access_token
-
-4. Полное обновление токенов:
-   - Когда refresh_token почти истек (осталось 1-5 дней), клиент отправляет его на /auth/refresh
-   - Сервер возвращает новую пару токенов
-
-5. Выход из системы:
-   - При logout сервер очищает оба куки-файла
-"""
-
-
 templates = Jinja2Templates(directory="templates")
 
 async def create_database():
@@ -70,14 +46,14 @@ app = FastAPI(
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
     prefix="/auth",
-    tags=["Auth"],
+    tags=["Authentication"],
 )
 
 
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
-    tags=["Auth"],
+    tags=["Authentication"],
 )
 
 
@@ -100,74 +76,9 @@ app.add_middleware(
                    "Authorization"],
 )
 
-router = APIRouter(
-    tags=["Currency Conversion"]
-)
-
-@router.post("/", response_class=HTMLResponse)
-async def currency_conversion(request: Request, from_: str = Form(...), to: str = Form(...), amount: str = Form(...)):
-    """
-    :param from_:
-        This option is intended for the currency we are converting.
-
-    :param to:
-        This is the volute we are converting to.
-
-    :param amount:
-        Number of currencies convertible.
-
-    :return:
-        json response
-    """
-    try:
-        url = f"https://api.apilayer.com/currency_data/convert?to={to}&from={from_}&amount={amount}"
-        headers = {"apikey": settings.CURRENCY_API_KEY}
-        response = requests.get(url, headers=headers)
-        result = response.json()
-        return templates.TemplateResponse("index.html", {"request": request, "result": result})
-    except Exception as error:
-        return templates.TemplateResponse("index.html", {"request": request, "error": str(error)})
-
-
-def is_admin(user: User = Depends(current_user)) -> bool:
-    return user.role.name == "admin"
-
-
-@router.get("/protected-user", response_class=HTMLResponse)
-async def protected_user_route(request: Request, user: User = Depends(current_user)):
-    return templates.TemplateResponse(
-        "converter.html",
-        {
-            "request": request,
-            "user": user
-        }
-    )
-
-
-@router.get("/protected-admin", response_class=HTMLResponse, dependencies=[Depends(is_admin)])
-async def protected_admin_route(request: Request, user: User = Depends(current_user)):
-    return templates.TemplateResponse(
-        "converter_for_admin.html",
-        {
-            "request": request,
-            "user": user
-        }
-    )
-
-"""
-Если пользователь не аутентифицирован, current_user в is_admin() выбросит 401 Unauthorized;
-Затем выполняется проверка user.role.name == "admin";
-Если проверка не проходит, возвращается 403 Forbidden;
-
-FastAPI автоматически возвращает 403 Forbidden, если зависимость в dependencies=[...] вернула False.
-Это часть встроенной логики Depends() для удобства реализации RBAC (Role Based Access Control (рус. Управление доступом на основе ролей)).
-"""
-
-app.include_router(router)
-
 
 # Добавляем новые маршруты для работы с токенами
-auth_router = APIRouter(prefix="/auth", tags=["Auth"])
+auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @auth_router.post("/refresh", response_model=TokenPair)
@@ -218,6 +129,100 @@ async def logout(
 
 
 app.include_router(auth_router)
+
+
+router = APIRouter(
+    tags=["Authorization"]
+)
+
+
+def is_admin(user: User = Depends(current_user)) -> bool:
+    return user.role.name == "admin"
+
+
+@router.get("/protected-user", response_class=HTMLResponse)
+async def protected_user_route(request: Request, user: User = Depends(current_user)):
+    return templates.TemplateResponse(
+        "converter.html",
+        {
+            "request": request,
+            "user": user
+        }
+    )
+
+
+@router.get("/protected-admin", response_class=HTMLResponse, dependencies=[Depends(is_admin)])
+async def protected_admin_route(request: Request, user: User = Depends(current_user)):
+    return templates.TemplateResponse(
+        "converter_for_admin.html",
+        {
+            "request": request,
+            "user": user
+        }
+    )
+
+
+@router.post("/convert-for-user", response_class=HTMLResponse)
+async def protected_user_route(request: Request, user: User = Depends(current_user), from_: str = Form(...), to: str = Form(...), amount: str = Form(...)):
+    """
+    :param from_:
+        This option is intended for the currency we are converting.
+
+    :param to:
+        This is the volute we are converting to.
+
+    :param amount:
+        Number of currencies convertible.
+
+    :return:
+        json response
+    """
+    try:
+        url = f"https://api.apilayer.com/currency_data/convert?to={to}&from={from_}&amount={amount}"
+        headers = {"apikey": settings.CURRENCY_API_KEY}
+        response = requests.get(url, headers=headers)
+        result = response.json()
+        return templates.TemplateResponse("converter.html", {"request": request, "user": user, "result": result})
+    except Exception as error:
+        return templates.TemplateResponse("converter.html", {"request": request, "error": str(error)})
+
+
+
+@router.post("/convert-for-admin", response_class=HTMLResponse, dependencies=[Depends(is_admin)])
+async def protected_admin_route(request: Request, user: User = Depends(current_user), from_: str = Form(...), to: str = Form(...), amount: str = Form(...)):
+    """
+    :param from_:
+        This option is intended for the currency we are converting.
+
+    :param to:
+        This is the volute we are converting to.
+
+    :param amount:
+        Number of currencies convertible.
+
+    :return:
+        json response
+    """
+    try:
+        url = f"https://api.apilayer.com/currency_data/convert?to={to}&from={from_}&amount={amount}"
+        headers = {"apikey": settings.CURRENCY_API_KEY}
+        response = requests.get(url, headers=headers)
+        result = response.json()
+        return templates.TemplateResponse("converter_for_admin.html", {"request": request, "user": user, "result": result})
+    except Exception as error:
+        return templates.TemplateResponse("converter_for_admin.html", {"request": request, "error": str(error)})
+
+"""
+Если пользователь не аутентифицирован, current_user в is_admin() выбросит 401 Unauthorized;
+Затем выполняется проверка user.role.name == "admin";
+Если проверка не проходит, возвращается 403 Forbidden;
+
+FastAPI автоматически возвращает 403 Forbidden, если зависимость в dependencies=[...] вернула False.
+Это часть встроенной логики Depends() для удобства реализации RBAC (Role Based Access Control (рус. Управление доступом на основе ролей)).
+"""
+
+app.include_router(router)
+
 
 if __name__ == "__main__":
     import uvicorn
