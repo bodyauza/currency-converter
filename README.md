@@ -2,13 +2,14 @@
 
 ## Screenshots
 
-### Home Page
+### Protected Pages
 
-![Home Page](https://github.com/bodyauza/currency-converter/raw/master/home_page.png)
+![Admin Page](https://github.com/bodyauza/currency-converter/raw/master/admin_page.png)
+![User Page](https://github.com/bodyauza/currency-converter/raw/master/user_page.png)
 
 ### Swagger UI
 
-![Swagger1](https://github.com/bodyauza/currency-converter/raw/master/swagger1.png)
+![Swagger UI](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/Swagger1.png)
 
 ## Technological Stack
 
@@ -31,21 +32,23 @@
 ---
 
 ### Backend
+- **Python**: 3.13.5
+- **FastAPI**: 0.115.14
+- **FastAPI Users**: 14.0.1
 
-
-### Build Tools
-
+### ASGI web server
+- **uvicorn**: 0.35.0
 
 ### Database
 - **PostgreSQL**: 17.5
-
+- **SQLAlchemy**: 2.0.41
 
 ### Testing Tools
-
+- **Swagger UI**: 5.26.0
 
 ### Frontend
 - **HTML5**, **CSS3**, **JavaScript**
-- ****: 
+- **Jinja2**: 3.1.6
 
 ## Authentication Process
 
@@ -57,7 +60,7 @@
 
 3. **Using the Access Token**  
    The client uses the received access token to interact with the API. All subsequent requests to protected routes must
-   include this token in the authorization header.
+   include this token in the cookie.
 
 4. **Access Token Renewal**  
    The access token has a validity period, usually 5 minutes. When the validity of this token expires, the client sends
