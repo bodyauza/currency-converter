@@ -5,7 +5,6 @@
 ### Protected Pages
 
 ![Admin Page](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/protected2.png)
-![User Page](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/protected1.png)
 
 ### Swagger UI
 
