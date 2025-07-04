@@ -4,31 +4,34 @@ import requests
 from fastapi import FastAPI, Request, Form, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
+from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import HTMLResponse
 
 from src.auth.manager import get_user_manager
 from src.config import settings
-from database import Base, engine
+from src.database import Base, engine, get_async_session
 from src.auth.auth_config import fastapi_users, auth_backend, current_user, \
     refresh_backend, get_refresh_strategy, get_access_strategy
-from src.auth.models import User
 from src.auth.schemas import UserRead, UserCreate, TokenPair
 
 from fastapi import Response, status
 from fastapi.responses import JSONResponse
 from fastapi_users import models
 
+from src.auth.models import User, Role
+
 
 templates = Jinja2Templates(directory="templates")
 
 async def create_database():
+    print("До create_all:", Base.metadata.tables.keys())
     try:
         async with engine.begin() as conn:
             # Синхронно создает все таблицы из моделей, наследующих Base
             await conn.run_sync(Base.metadata.create_all)
-        print("База данных успешно создана")
+        print("Таблицы базы данных успешно созданы")
     except Exception as e:
-        print(f"Ошибка при создании БД: {e}")
+        print(f"Ошибка при создании таблиц: {e}")
 
 
 # Инициализация FastAPI с lifespan
@@ -136,7 +139,9 @@ router = APIRouter(
 )
 
 
-def is_admin(user: User = Depends(current_user)) -> bool:
+async def is_admin(user: User = Depends(current_user), session: AsyncSession = Depends(get_async_session)
+                   ) -> bool:
+    await session.refresh(user, ["role"])  # Явно обновляем связь
     return user.role.name == "admin"
 
 

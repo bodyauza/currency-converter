@@ -13,7 +13,7 @@ class Role(Base):
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
-    __tablename__ = "user"
+    __tablename__ = "person"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String, nullable=False)
