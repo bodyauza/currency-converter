@@ -2,10 +2,9 @@
 
 ## Screenshots
 
-### Protected Pages
+### Protected Page
 
-![Admin Page](https://github.com/bodyauza/currency-converter/raw/master/admin_page.png)
-![User Page](https://github.com/bodyauza/currency-converter/raw/master/user_page.png)
+![Admin Page](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/protected2.png)
 
 ### Swagger UI
 
@@ -73,4 +72,32 @@
 
 ## Local development
 
-1.
+### 1. Setting up a virtual environment. You need to run the command in the root folder of the project to create a virtual environment:
+
+```
+python -m venv venv
+```
+`venv` – the name of the folder in which the virtual environment will be created.
+
+### 2. Activate the virtual environment:
+
+Windows:
+```
+venv\Scripts\activate
+```
+Linux/MacOS:
+```
+source venv/bin/activate
+```
+
+### 3. After activating the virtual environment, install all the necessary packages specified in the requirements.txt file:
+```
+pip install -r requirements.txt
+```
+
+### 4. FastAPI uses the uvicorn server to run the application. To run it, open a terminal and run the command:
+```
+uvicorn main:app --reload
+```
+
+`http://localhost:8000/docs` - here you will see the Swagger UI interface, which you can use to send requests to your API.
