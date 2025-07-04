@@ -4,8 +4,8 @@
 
 ### Protected Pages
 
-![Admin Page](https://github.com/bodyauza/currency-converter/raw/master/admin_page.png)
-![User Page](https://github.com/bodyauza/currency-converter/raw/master/user_page.png)
+![Admin Page](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/protected2.png)
+![User Page](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/protected1.png)
 
 ### Swagger UI
 
