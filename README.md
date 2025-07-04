@@ -80,8 +80,14 @@ python -m venv venv
 `venv` – the name of the folder in which the virtual environment will be created.
 
 2. Activate the virtual environment:
+
+Windows:
 ```
 venv\Scripts\activate
+```
+Linux/MacOS:
+```
+source venv/bin/activate
 ```
 
 3. After activating the virtual environment, install all the necessary packages specified in the requirements.txt file:
