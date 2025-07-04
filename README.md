@@ -2,7 +2,7 @@
 
 ## Screenshots
 
-### Protected Pages
+### Protected Page
 
 ![Admin Page](https://github.com/bodyauza/currency-converter/blob/main/src/screenshots/protected2.png)
 
