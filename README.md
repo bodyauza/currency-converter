@@ -95,7 +95,18 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. FastAPI uses the uvicorn server to run the application. To run it, open a terminal and run the command:
+### 4. In the `.env` file, you need to define the variables for the database user name and password 
+```
+DB_USER=...
+DB_PASS=...
+```
+
+### 5. You need to get the API key of the currency converter, for example, on the website https://apilayer.com/marketplace/currency_data-api
+```
+CURRENCY_API_KEY=...
+```
+
+### 6. FastAPI uses the uvicorn server to run the application. To run it, open a terminal and run the command:
 ```
 uvicorn main:app --reload
 ```
