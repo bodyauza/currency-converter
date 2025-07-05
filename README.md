@@ -72,7 +72,8 @@
 
 ## Local development
 
-### 1. Setting up a virtual environment. You need to run the command in the root folder of the project to create a virtual environment:
+### 1. Setting Up a Virtual Environment
+Run the following command in the project's root folder to create a virtual environment:
 
 ```
 python -m venv venv
@@ -90,25 +91,28 @@ Linux/MacOS:
 source venv/bin/activate
 ```
 
-### 3. After activating the virtual environment, install all the necessary packages specified in the requirements.txt file:
+### 3. After activating the virtual environment, install all required packages from requirements.txt:
+
 ```
 pip install -r requirements.txt
 ```
 
-### 4. In the `.env` file, you need to define the variables for the database user name and password 
+### 4. Configuring Environment Variables
+Create or modify the .env file in the project root and specify the following variables:
+
 ```
 DB_USER=...
 DB_PASS=...
 ```
 
-### 5. You need to get the API key of the currency converter, for example, on the website https://apilayer.com/marketplace/currency_data-api
+### 5. Obtain a currency converter API key (for example, from [API Layer](https://apilayer.com/marketplace/currency_data-api))
 ```
 CURRENCY_API_KEY=...
 ```
 
-### 6. FastAPI uses the uvicorn server to run the application. To run it, open a terminal and run the command:
+### 6. FastAPI applications run on the Uvicorn server. To start the server open a terminal and run the command:
 ```
 uvicorn main:app --reload
 ```
 
-`http://localhost:8000/docs` - here you will see the Swagger UI interface, which you can use to send requests to your API.
+Access the interactive Swagger UI documentation at: [http://localhost:8000/docs](http://localhost:8000/docs)
