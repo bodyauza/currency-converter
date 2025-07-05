@@ -4,8 +4,10 @@ import requests
 from fastapi import FastAPI, Request, Form, Depends, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import HTMLResponse
+from sqlalchemy_utils import database_exists, create_database
 
 from src.auth.manager import get_user_manager
 from src.config import settings
@@ -13,25 +15,28 @@ from src.database import Base, engine, get_async_session
 from src.auth.auth_config import fastapi_users, auth_backend, current_user, \
     refresh_backend, get_refresh_strategy, get_access_strategy
 from src.auth.schemas import UserRead, UserCreate, TokenPair
+from src.auth.models import User, Role
 
 from fastapi import Response, status
 from fastapi.responses import JSONResponse
 from fastapi_users import models
-
-from src.auth.models import User, Role
-from sqlalchemy_utils import database_exists, create_database
 
 
 templates = Jinja2Templates(directory="templates")
 
 async def create_clients_db():
     print("До create_all:", Base.metadata.tables.keys())
+    # Создаем временный синхронный движок для проверки/создания БД
+    sync_url = engine.url.set(drivername="postgresql+psycopg2")  # меняем на синхронный драйвер
+    sync_engine = create_engine(sync_url)
+
+    if not database_exists(sync_engine.url):
+        create_database(sync_engine.url)
+    sync_engine.dispose()  # закрываем синхронное соединение
     try:
         async with engine.begin() as conn:
             # Синхронно создает все таблицы из моделей, наследующих Base
             await conn.run_sync(Base.metadata.create_all)
-            if not database_exists(engine.url):
-                create_database(engine.url)
         print("Таблицы базы данных успешно созданы")
     except Exception as e:
         print(f"Ошибка при создании таблиц: {e}")

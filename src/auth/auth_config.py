@@ -70,5 +70,4 @@ fastapi_users = FastAPIUsers[User, int](
 # @router.get("/protected-route")
 # async def protected_route(user: User = Depends(current_user)):
 
-# Dependency для получения текущего пользователя
 current_user = fastapi_users.current_user(active=True, get_enabled_backends=get_enabled_backends)
