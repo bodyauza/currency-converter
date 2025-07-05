@@ -53,8 +53,8 @@ refresh_backend = AuthenticationBackend(
 async def get_enabled_backends(request: Request):
     path = request.url.path
     if any(path.endswith(p) for p in ["/refresh", "/access-token", "/logout"]):
-        return [refresh_backend]
-    return [auth_backend]
+        return [auth_backend]
+    return [refresh_backend]
 
 
 from src.auth.manager import get_user_manager

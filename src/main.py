@@ -19,16 +19,19 @@ from fastapi.responses import JSONResponse
 from fastapi_users import models
 
 from src.auth.models import User, Role
+from sqlalchemy_utils import database_exists, create_database
 
 
 templates = Jinja2Templates(directory="templates")
 
-async def create_database():
+async def create_clients_db():
     print("До create_all:", Base.metadata.tables.keys())
     try:
         async with engine.begin() as conn:
             # Синхронно создает все таблицы из моделей, наследующих Base
             await conn.run_sync(Base.metadata.create_all)
+            if not database_exists(engine.url):
+                create_database(engine.url)
         print("Таблицы базы данных успешно созданы")
     except Exception as e:
         print(f"Ошибка при создании таблиц: {e}")
@@ -37,7 +40,7 @@ async def create_database():
 # Инициализация FastAPI с lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_database()
+    await create_clients_db()
     yield
 
 app = FastAPI(
