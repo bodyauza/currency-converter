@@ -50,12 +50,12 @@ refresh_backend = AuthenticationBackend(
     get_strategy=get_refresh_strategy,
 )
 
-async def get_enabled_backends(request: Request):
-    path = request.url.path
-    if any(path.endswith(p) for p in ["/refresh", "/access-token", "/logout"]):
-        return [auth_backend]
-    return [refresh_backend]
 
+async def get_enabled_backends(request: Request):
+    # Для маршрутов обновления токенов используем только refresh токен
+    if request.url.path in ["/auth/refresh", "/auth/access-token", "/auth/logout"]:
+        return [refresh_backend]
+    return [auth_backend, refresh_backend]
 
 from src.auth.manager import get_user_manager
 from src.auth.models import User
